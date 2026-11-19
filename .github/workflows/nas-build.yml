@@ -1,0 +1,44 @@
+name: NAS Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build bread-compact-wifi
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:release-v6.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Show pinned OTA URL
+        shell: bash
+        run: grep -A2 "config OTA_URL" main/Kconfig.projbuild | head -5
+
+      - name: Build firmware
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          python scripts/build.py bread-compact-wifi \
+            --name bread-compact-wifi \
+            --language zh-CN \
+            --wake-word wn9_nihaoxiaozhi_tts
+
+      - name: Show artifacts
+        shell: bash
+        run: ls -lh build/merged-binary.bin build/*.bin 2>/dev/null | head -20
+
+      - name: Upload merged binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-binary-bread-compact-wifi
+          path: build/merged-binary.bin
+          if-no-files-found: error
+          retention-days: 7
